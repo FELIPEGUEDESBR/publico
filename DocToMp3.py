@@ -1,60 +1,67 @@
-# Script para converter texto de um arquivo .docx para um arquivo .mp3
-# Primeiro instale os pacotes: pyttsx3, python-docx, tkinter com apt install 
-import pyttsx3
-from docx import Document
-from tkinter import Tk
-from tkinter.filedialog import askopenfilename
+# # Script para converter texto de um arquivo .docx para um arquivo .mp3
 
-# Função para converter texto de um arquivo .docx para um arquivo .mp3
-def doc_to_mp3(input_file, output_file, rate=150):
-    document = Document(input_file)
-    text = ''
-    for paragraph in document.paragraphs:
-        text += paragraph.text + '\n'
-    text_to_speech(text, output_file, rate)
+import tkinter as tk
+from tkinter import ttk
+from tkinter import filedialog
 
-# Esta função converte o texto em fala sintetizada, fornecendo a flexibilidade da taxa de fala e salvando-o
-def text_to_speech(text, output_file, rate=150):
-    audio_interface = pyttsx3.init()
-    audio_interface.setProperty('rate', rate)   
-    audio_interface.save_to_file(text, output_file)
-    audio_interface.runAndWait()
-
-# Navega pelo sistema de arquivos para selecionar um arquivo .docx
+# Função para abrir a janela de diálogo para escolher o arquivo
 def browse_file():
     file_path = filedialog.askopenfilename(filetypes=[("Word files", "*.docx")])
     if file_path:
         entry_path.delete(0, tk.END)
         entry_path.insert(0, file_path)
 
-# processa um arquivo de documento selecionado, convertendo seu conteúdo de texto em formato de audiobook MP3 e notifica o usuário ao criar com sucesso, exibindo o nome do audiobook
-def create_audio():
-    doc_file = entry_path.get()
-    if not doc_file:
-        messagebox.showerror("Error", "Please select a document file")
+#Função para converter o arquivo
+def convert_file():
+    import pyttsx3
+    import docx
+    import os
+    import re
+
+    # Carrega o arquivo
+    file_path = entry_path.get()
+    if not file_path:
         return
-    output_file = filedialog.asksaveasfilename(defaultextension=".mp3", filetypes=[("MP3 files", "*.mp3")])
-    if output_file:
-        doc_text = extract_text_from_doc(doc_file)
-        text_to_speech(doc_text, output_file)
-        messagebox.showinfo("Success", f"Audiobook '{output_file}' created successfully!")
 
-# Cria uma janela com o título “AudioBook at Flood”.
+    doc = docx.Document(file_path)
+    text = ""
+    for para in doc.paragraphs:
+        text += para.text + "\n"
 
-root = tk.Tk()
-root.title("AudioBook at Flood")
+    # Remove caracteres especiais
+    text = re.sub(r'[^\w\s]', '', text)
 
-#Cria uma janela para mostrar o caminho do arquivo selecionado
-entry_path = tk.Entry(root, width=50)
-entry_path.grid(row=0, column=0, padx=10, pady=10)
+    # Converte o texto em áudio
+    engine = pyttsx3.init()
+    voices = engine.getProperty('voices')
+    for voice in voices:
+        if "Microsoft Daniel - Portuguese (Brazil)" in voice.name:
+            engine.setProperty('voice', voice.id)
+            break
+    engine.save_to_file(text, 'audio.mp3')
+    engine.runAndWait()
 
-#Cria um botão para selecionar um arquivo .docx
-btn_browse = tk.Button(root, text="Browse File", command=browse_file)
-btn_browse.grid(row=0, column=1, padx=10, pady=10)
+    # Abre o arquivo de áudio
+    os.system("audio.mp3")
 
-# Criar um botão para criar um audiobook
-btn_create = tk.Button(root, text="Create Audiobook", command=create_audio)
-btn_create.grid(row=1, columnspan=2, padx=10, pady=10)
+# Criação da janela
+janela = tk.Tk()
+janela.title(" Aplicação GUI para conversão de texto em áudio") 
+tk.Label(janela,text="Converter Word para mp3:").grid(row=0)
 
-# Inicia a janela principal
-root.mainloop()
+
+# Campos de entrada
+entry_path = tk.Entry(janela, width=50)
+entry_path.grid(row=3,column=1,sticky=tk.W,pady=4)
+
+# Botão para localizar o arquivo
+btnLocalizar = tk.Button(janela, text='Localizar Word', command=browse_file).grid(row=3,column=0,sticky=tk.W,pady=4)
+
+# Botão para converter o arquivo
+btnConverter = tk.Button(janela, text='Converter', command=convert_file).grid(row=4,column=0,sticky=tk.W,pady=4)
+
+
+# Botão para sair
+btnSair = tk.Button(janela, text='Sair', command=janela.quit).grid(row=4,column=1,sticky=tk.W,pady=4)
+
+tk.mainloop()   
